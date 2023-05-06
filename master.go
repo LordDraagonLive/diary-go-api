@@ -59,6 +59,86 @@ func getEntryByIdHandler(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, entry) // return entry with status code 200
 }
 
+func updateEntryById(c *gin.Context) {
+
+	// Get ID from URL query parameter
+	idStr := c.Query("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID is required"})
+		return
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	// Get existing entry
+	entry, err := getEntryById(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Entry not found"})
+		return
+	}
+
+	// Update fields if specified in request body
+	if c.Request.Body != nil {
+		var updateData map[string]interface{}
+		if err := c.BindJSON(&updateData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid update data"})
+			return
+		}
+		if title, ok := updateData["title"].(string); ok {
+			entry.Title = title
+		}
+		if dedication, ok := updateData["dedication"].(string); ok {
+			entry.Dedication = dedication
+		}
+		if body, ok := updateData["body"].(string); ok {
+			entry.Body = body
+		}
+	}
+
+	// Update entry
+	entry.UpdatedDateTime = time.Now().Local()
+
+	// Return updated entry
+	c.IndentedJSON(http.StatusOK, entry)
+}
+
+func deleteEntryById(c *gin.Context) {
+	// Get ID from URL query parameter
+	idStr := c.Query("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID is required"})
+		return
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	// Get existing entry
+	entry, err := getEntryById(id)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Entry not found"})
+		return
+	}
+
+	// Delete entry
+	entries = append(entries[:id], entries[id+1:]...)
+
+	// Return deleted entry
+	c.IndentedJSON(http.StatusOK, entry)
+
+	// c.IndentedJSON(http.StatusOK, entries[:id-1])
+
+}
+
 /*
 internal method to get entry by id
 */
@@ -77,5 +157,7 @@ func main() {
 	router.GET("/diary", getEntrys)
 	router.POST("/diary", createEntry)
 	router.GET("/diary/:id", getEntryByIdHandler)
+	router.PUT("/diary", updateEntryById)
+	router.DELETE("/diary", deleteEntryById)
 	router.Run("localhost:8080")
 }
