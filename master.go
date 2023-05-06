@@ -122,7 +122,7 @@ func deleteEntryById(c *gin.Context) {
 	}
 
 	// Get existing entry
-	entry, err := getEntryById(id)
+	deletedEntry, err := getEntryById(id)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Entry not found"})
@@ -130,13 +130,15 @@ func deleteEntryById(c *gin.Context) {
 	}
 
 	// Delete entry
-	entries = append(entries[:id], entries[id+1:]...)
+	for i, entry := range entries {
+		if entry.Id == id {
+			entries = append(entries[:i], entries[i+1:]...)
+			break
+		}
+	}
 
 	// Return deleted entry
-	c.IndentedJSON(http.StatusOK, entry)
-
-	// c.IndentedJSON(http.StatusOK, entries[:id-1])
-
+	c.IndentedJSON(http.StatusOK, deletedEntry)
 }
 
 /*
